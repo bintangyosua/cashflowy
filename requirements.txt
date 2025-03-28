@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+gspread
+oauth2client
+requests
+gunicorn
+dotenv
+google-genai
