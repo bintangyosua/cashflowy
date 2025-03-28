@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 import logging
 import json
+import pytz
 
 app = FastAPI()
 
@@ -27,6 +28,11 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 GEMINI_API_URL = os.getenv('GEMINI_API_URL') + GEMINI_API_KEY
 
 VERIFY_TOKEN = os.getenv('VERIFY_TOKEN')
+
+def get_wib_time():
+    utc_now = datetime.utcnow()
+    wib_tz = pytz.timezone("Asia/Jakarta")
+    return utc_now.replace(tzinfo=pytz.utc).astimezone(wib_tz)
 
 def classify_text(text):
     headers = {"Content-Type": "application/json"}
@@ -88,7 +94,9 @@ async def whatsapp_webhook(request: Request):
             category, payment_method, description = classify_text(message)
             amount = [int(s) for s in message.split() if s.isdigit()]
             amount = amount[0] if amount else 0
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            timestamp = get_wib_time().strftime("%Y-%m-%d %H:%M:%S")  # Timestamp dalam WIB
+            
+            print(timestamp)
             
             if not is_duplicate_entry(timestamp, message):
                 sheet.append_row([timestamp, message, category, amount, payment_method, description])
@@ -97,6 +105,7 @@ async def whatsapp_webhook(request: Request):
                 continue
             
             response_message = f"✅ Transaksi tercatat!\nKategori: {category}\nJumlah: {amount}\nMetode Pembayaran: {payment_method}\nDeskripsi: {description}\nWaktu: {timestamp}\n\nData telah disimpan di Google Sheets."
+            print(response_message)
             send_whatsapp_message(sender, response_message)
     
     return {"status": "success", "message": response_message}
