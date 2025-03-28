@@ -58,7 +58,10 @@ def send_whatsapp_message(to, message):
         "type": "text",
         "text": {"body": message}
     }
-    requests.post(url, json=data, headers=headers)
+    
+    print('sampe sini cok hahaha')
+    response = requests.post(url, json=data, headers=headers)
+    print(response.text)
 
 def is_duplicate_entry(timestamp, message):
     records = sheet.get_all_values()
