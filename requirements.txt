@@ -10,3 +10,4 @@ gunicorn
 dotenv
 google-generativeai
 httpx
+pandas
