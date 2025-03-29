@@ -1,3 +1,4 @@
+import csv
 from datetime import datetime, timedelta
 from io import StringIO
 from fastapi import HTTPException
@@ -5,8 +6,6 @@ import requests
 from schemas.models import Transaction
 from config import settings
 from services.sheets_service import SheetsService
-
-import pandas as pd
 
 class WhatsAppClient:
     """Class untuk menangani komunikasi dengan WhatsApp API."""
@@ -91,55 +90,68 @@ class WhatsAppService:
         return WhatsAppClient.send_buttons(recipient_id, text, buttons)
 
     @staticmethod
-    def get_recent_transactions(sheet, limit=5):
-        """Mengambil transaksi terbaru dengan format rapi untuk WhatsApp"""
-        transactions = sheet.get_all_values()
-        
-        if not transactions:
-            return "No transactions found."
-
-        formatted_transactions = [] 
-        for row in transactions[-limit:][::-1]:
-            timestamp, category, total, method, desc = row[0], row[2], row[3], row[4], row[5]
-            emoji = "🛒" if "Belanja" in category else "🍽️" if "Makanan" in category else "💰" if "Transfer" in category else "💳"
-            formatted_transactions.append(f"{timestamp}\n{emoji} *{category}* - {total} ({method})\n   {desc}")
-
-        return f"📌 *Transaksi Terbaru:*\n\n" + "\n\n".join(formatted_transactions) + "\n"
-    
-    @staticmethod
     def get_weekly_report(sheet: SheetsService):
-        df = SheetsService.sheet_to_dataframe(sheet)
+        raw_data = sheet.get_all_values()
+        
+        if not raw_data or len(raw_data) < 2:
+            return "Sheet kosong atau tidak ada data yang cukup.", "Tidak ada data untuk disimpan."
 
-        # Konversi Timestamp ke datetime
-        df["Timestamp"] = pd.to_datetime(df["Timestamp"], format="%Y-%m-%d %H:%M:%S")
+        # Ambil header dan ubah ke list of dicts
+        headers = raw_data[0]
+        data = [dict(zip(headers, row)) for row in raw_data[1:] if any(row)]  # Hindari baris kosong
+        
+        # Konversi timestamp ke datetime dengan validasi
+        for row in data:
+            try:
+                row["Timestamp"] = datetime.strptime(row["Timestamp"], "%Y-%m-%d %H:%M:%S")
+            except (ValueError, KeyError):
+                row["Timestamp"] = None  # Jika format salah, biarkan None
 
         # Filter transaksi seminggu terakhir
         one_week_ago = datetime.now() - timedelta(days=7)
-        weekly_df = df[df["Timestamp"] >= one_week_ago]
-
-        if weekly_df.empty:
+        weekly_data = [row for row in data if row["Timestamp"] and row["Timestamp"] >= one_week_ago]
+        
+        if not weekly_data:
             return "Tidak ada transaksi dalam seminggu terakhir.", "Tidak ada data untuk disimpan."
 
-        # Tambah kolom 'Tanggal' biar lebih mudah dikelompokkan per hari
-        weekly_df["Tanggal"] = weekly_df["Timestamp"].dt.date
+        # Tambah kolom 'Tanggal'
+        for row in weekly_data:
+            row["Tanggal"] = row["Timestamp"].date()
 
         # Agregasi berdasarkan Tanggal, Kategori, Metode, dan Tipe
-        agg_df = (weekly_df.groupby(["Tanggal", "Kategori", "Metode", "Tipe"])
-                            .agg({"Total Harga": "sum", "Deskripsi": lambda x: ", ".join(x)})
-                            .reset_index())
+        aggregated = {}
+        for row in weekly_data:
+            key = (row["Tanggal"], row.get("Kategori", "Unknown"), row.get("Metode", "Unknown"), row.get("Tipe", "Unknown"))
+            if key not in aggregated:
+                aggregated[key] = {"Total Harga": 0, "Deskripsi": []}
+            
+            # FIX: Parsing harga dengan validasi ketat
+            harga_str = row.get("Total Harga", "").replace("Rp", "").replace(",", "").replace(".", "").strip()  # Hapus Rp, koma, titik
+            try:
+                harga = int(harga_str) if harga_str.isdigit() else 0  # Cek apakah angka valid sebelum parse
+            except ValueError:
+                print(f"⚠️ Gagal parse harga: {row.get('Total Harga')} (set 0)")
+                harga = 0  # Jika gagal parse, set 0
 
-        # **Convert DataFrame ke CSV (tanpa header & index biar lebih clean)**
+            aggregated[key]["Total Harga"] += harga
+            aggregated[key]["Deskripsi"].append(row.get("Deskripsi", "No description"))
+
+        # Buat CSV
         csv_output = StringIO()
-        agg_df.to_csv(csv_output, index=False)
+        writer = csv.writer(csv_output)
+        writer.writerow(["Tanggal", "Kategori", "Metode", "Tipe", "Total Harga", "Deskripsi"])
+        for (tanggal, kategori, metode, tipe), values in aggregated.items():
+            writer.writerow([tanggal, kategori, metode, tipe, values["Total Harga"], ", ".join(values["Deskripsi"])])
         csv_text = csv_output.getvalue()
 
-        # **Format laporan untuk WhatsApp**
+        # Format laporan untuk WhatsApp
         formatted_report = []
-        for tanggal, daily_df in agg_df.groupby("Tanggal"):
-            formatted_report.append(f"📅 *{tanggal}*")
-            for _, row in daily_df.iterrows():
-                emoji = "🛒" if "Belanja" in row["Kategori"] else "🍽️" if "Makanan" in row["Kategori"] else "💰" if "Transfer" in row["Kategori"] else "💳"
-                formatted_report.append(f"{emoji} *{row['Kategori']}* - Rp{row['Total Harga']} ({row['Metode']})\n   {row['Deskripsi']}")
+        sorted_keys = sorted(aggregated.keys())
+        for tanggal, kategori, metode, tipe in sorted_keys:
+            total_harga = aggregated[(tanggal, kategori, metode, tipe)]["Total Harga"]
+            deskripsi = ", ".join(aggregated[(tanggal, kategori, metode, tipe)]["Deskripsi"])
+            emoji = "🛒" if "Belanja" in kategori else "🍽️" if "Makanan" in kategori else "💰" if "Transfer" in kategori else "💳"
+            formatted_report.append(f"📅 *{tanggal}*\n{emoji} *{kategori}* - Rp{total_harga:,} ({metode})\n   {deskripsi}")
 
         whatsapp_text = "\n\n".join(formatted_report)
 
