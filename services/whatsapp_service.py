@@ -90,6 +90,22 @@ class WhatsAppService:
         return WhatsAppClient.send_buttons(recipient_id, text, buttons)
 
     @staticmethod
+    def get_recent_transactions(sheet, limit=5):
+        """Mengambil transaksi terbaru dengan format rapi untuk WhatsApp"""
+        transactions = sheet.get_all_values()
+        
+        if not transactions:
+            return "No transactions found."
+
+        formatted_transactions = [] 
+        for row in transactions[-limit:][::-1]:
+            timestamp, category, total, method, desc = row[0], row[2], row[3], row[4], row[5]
+            emoji = "🛒" if "Belanja" in category else "🍽️" if "Makanan" in category else "💰" if "Transfer" in category else "💳"
+            formatted_transactions.append(f"{timestamp}\n{emoji} *{category}* - {total} ({method})\n   {desc}")
+
+        return f"📌 *Transaksi Terbaru:*\n\n" + "\n\n".join(formatted_transactions) + "\n"
+
+    @staticmethod
     def get_weekly_report(sheet: SheetsService):
         raw_data = sheet.get_all_values()
         
