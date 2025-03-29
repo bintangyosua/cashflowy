@@ -5,7 +5,7 @@ from config import settings
 class GeminiService:
     def __init__(self):
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel('gemini-1.5-pro-latest')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
         
     async def parse_transaction(self, message: str) -> Transaction:
         prompt = f"""

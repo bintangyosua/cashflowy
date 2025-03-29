@@ -1,67 +1,66 @@
-# WhatsApp Financial Bot
+# WhatsApp AI Transaction Bot
 
-WhatsApp Financial Bot is an AI-powered chatbot that helps users record and categorize their financial transactions directly from WhatsApp. It integrates FastAPI, Google Sheets API, and Google Gemini AI to process and store transaction data efficiently.
+An AI-powered WhatsApp bot that records transactions from WhatsApp messages and provides interactive buttons for navigation.
 
-## Features
+## 🚀 Features
 
-✅ **Automated Transaction Logging**: Saves WhatsApp messages containing financial transactions to Google Sheets.  
-✅ **AI-Based Categorization**: Uses Google Gemini AI to classify transactions based on message content.  
-✅ **Real-Time Responses**: Sends instant confirmations with categorized transaction details.  
-✅ **WhatsApp Cloud API Integration**: Seamlessly connects to WhatsApp for message processing.  
-✅ **Duplicate Entry Prevention**: Avoids storing duplicate transactions.
+- Receives and processes transactions from WhatsApp messages.
+- Provides interactive buttons to view recent transactions and weekly reports.
+- Uses AI to convert transaction text into structured data.
+- Integrates with Google Sheets for transaction storage.
 
-## How It Works
+## 📦 Technologies
 
-1. Users send transaction details via WhatsApp (e.g., _"beli pulsa Telkomsel 20000 pake e-wallet Dana"_).
-2. The bot extracts the amount, payment method, and description.
-3. Google Gemini AI categorizes the transaction (e.g., _"Isi Ulang; E-wallet; Pembelian pulsa Telkomsel senilai 20000 menggunakan Dana."_).
-4. The transaction is stored in Google Sheets.
-5. A confirmation message is sent back to the user.
+- **Python** (FastAPI)
+- **WhatsApp Business API**
+- **Google Sheets API**
+- **Gemini AI** (for transaction parsing)
 
-## Tech Stack
+## 🔧 Installation
 
-- **FastAPI** - Backend framework for handling WhatsApp webhook events.
-- **Google Sheets API** - Stores transaction records.
-- **Google Gemini AI** - Provides AI-based categorization.
-- **WhatsApp Cloud API** - Receives and processes WhatsApp messages.
+1. Clone this repository:
+   ```sh
+   git clone https://github.com/your-username/whatsapp-ai-bot.git
+   cd whatsapp-ai-bot
+   ```
+2. Install dependencies:
+   ```sh
+   pip install -r requirements.txt
+   ```
+3. Configure environment variables:
+   ```sh
+   cp .env.example .env
+   # Edit .env according to your WhatsApp API & Google Sheets configuration
+   ```
 
-## Installation
+## 🚀 Running the Bot
 
-1.  Clone this repository:
+Start the server with FastAPI:
 
-    ```bash
-    git clone https://github.com/yourusername/whatsapp-financial-bot.git
-    cd whatsapp-financial-bot
-    ```
+```sh
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-2.  Install dependencies:
+## 📌 Usage
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+The bot will automatically respond to WhatsApp messages:
 
-3.  Set up environment variables in a .env file:
+- **"start"** → Displays "Recent Transactions" and "Weekly Menu" buttons.
+- **"recent"** → Shows the latest transactions.
+- **"weekly"** → Displays weekly report options.
+- **Transaction text** → AI processes and records the transaction in Google Sheets.
 
-    ```bash
-    WHATSAPP_ACCESS_TOKEN=your_whatsapp_access_token
-    WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
-    GEMINI_API_KEY=your_google_gemini_api_key
-    ```
+## 🛠 API Endpoints
 
-4.  Run the FastAPI server:
+| Method | Endpoint   | Description                     |
+| ------ | ---------- | ------------------------------- |
+| `GET`  | `/`        | Home Page                       |
+| `POST` | `/webhook` | Receives webhooks from WhatsApp |
 
-    ```bash
-    uvicorn main:app --reload
-    ```
+## 👨‍💻 Contributing
 
-5.  Set up the webhook URL in WhatsApp Cloud API.
+Pull requests are welcome! Please open an issue first if you want to add a new feature.
 
-## Usage
+## 📜 License
 
-Once deployed, send financial transactions to your WhatsApp bot, and they will be logged and categorized automatically.
-
-## License
-
-This project is open-source and available under the MIT License.
-
-Let me know if you need any modifications! 🚀
+MIT License. Feel free to use and modify it as needed!
