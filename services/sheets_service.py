@@ -1,8 +1,9 @@
-import asyncio
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from config import settings
 from schemas.models import Transaction
+
+import pandas as pd
 
 class SheetsService:
     def __init__(self):
@@ -39,3 +40,8 @@ class SheetsService:
             if row[0] == timestamp and row[1] == message:
                 return True
         return False
+
+    @staticmethod
+    def sheet_to_dataframe(sheet):
+        data = sheet.get_all_values()
+        return pd.DataFrame(data[1:], columns=data[0])

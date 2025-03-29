@@ -1,7 +1,6 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    DEEPSEEK_API_KEY: str
     google_sheet_name: str = "Keuangan Whatsapp"
     
     WHATSAPP_PHONE_NUMBER_ID: int

@@ -31,7 +31,7 @@ class GeminiService:
         """
         
         try:
-            response = await self.model.generate_content_async(prompt)
+            response = self.model.generate_content(prompt)
             
             # Bersihkan response dan ekstrak JSON
             json_str = self._clean_response(response.text)
@@ -39,6 +39,22 @@ class GeminiService:
             
         except Exception as e:
             raise ValueError(f"Gagal memproses transaksi: {str(e)}")
+    
+    def weekly_recommendation(self, message):
+        prompt = f"""
+        Anda adalah asisten pencatatan keuangan. Buat rekomendasi keuangan untuk minggu ini. Berikut adalah data agregasinya:
+        
+        {message}
+        """
+        try:
+            response = self.model.generate_content(prompt)
+            
+            # Bersihkan response dan ekstrak JSON
+            return response.text
+            
+        except Exception as e:
+            raise ValueError(f"Gagal memproses transaksi: {str(e)}")
+        
 
     def _clean_response(self, text: str) -> str:
         """Bersihkan response Gemini untuk ekstrak JSON"""
