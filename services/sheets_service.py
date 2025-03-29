@@ -1,3 +1,4 @@
+import asyncio
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from config import settings
@@ -11,10 +12,9 @@ class SheetsService:
             "credentials.json", scope)
         self.client = gspread.authorize(creds)
         self.sheet = self.client.open(settings.google_sheet_name).sheet1
-        
+    
     async def add_transaction(self, transaction: Transaction, prompt: str, formatted_time, timestamp):
         # Get current time in WIB timezone
-        
         row = [
             formatted_time,  # Use string instead of datetime object
             prompt,

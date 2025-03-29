@@ -3,12 +3,14 @@ from datetime import datetime
 import logging
 from fastapi import FastAPI, Request, HTTPException
 import pytz
+from schemas.models import Transaction
 from services.gemini_service import GeminiService
 from services.sheets_service import SheetsService
 from services.whatsapp_service import WhatsAppService
 from config import settings
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
 sheets = SheetsService()
 gemini = GeminiService()
 
@@ -17,44 +19,38 @@ async def whatsapp_webhook(request: Request):
     try:
         payload = await request.json()
         
-        # Handle timezone conversion
-        utc_now = datetime.now(pytz.utc)
+        # Timezone WIB
         wib_tz = pytz.timezone("Asia/Jakarta")
-        wib_now = utc_now.astimezone(wib_tz)
+        wib_now = datetime.now(wib_tz)
         formatted_time = wib_now.strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Extract message
-        message = ''
-        for entry in payload.get('entry', []):
-            for change in entry.get('changes', []):
-                if 'messages' in change.get('value', {}):
-                    message = change['value']['messages'][0]['text']['body']
-                    break
-            if message:
-                break
-                
-        if not message:
-            raise ValueError("No valid message found in payload")
-        
-        # Process transaction
-        transaction = await gemini.parse_transaction(message)
-        
-        # Send WhatsApp message and WAIT for it to complete
-        await WhatsAppService.send_whatsapp_message(
-            settings.WHATSAPP_PHONE_NUMBER_ID,
-            WhatsAppService.format_response(transaction, timestamp=formatted_time)
-        )
 
-        # Save to Google Sheets
+        # 🔥 Fix loop untuk ekstrak pesan
+        messages = payload.get("messages", [])  # Langsung ambil dari root payload
+        if not messages:
+            raise ValueError("Payload tidak mengandung pesan yang valid.")
+
+        message_data = messages[0]  # Ambil pesan pertama
+        message = message_data.get("text", {}).get("body", "")
+        sender = message_data.get("from", "")
+
+        if not message:
+            raise ValueError("Tidak ada teks dalam pesan WhatsApp.")
+
+        # Proses transaksi
+        transaction = await gemini.parse_transaction(message)
         await sheets.add_transaction(transaction, message, formatted_time, wib_now)
+        
+        WhatsAppService.async_send_message(
+            sender, WhatsAppService.format_response(transaction, formatted_time)
+        )
         
         return {
             "status": "success",
             "data": transaction.model_dump()
         }
-        
+
     except Exception as e:
-        print(f"Error: {str(e)}")
+        logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=400,
             detail={
@@ -63,6 +59,7 @@ async def whatsapp_webhook(request: Request):
                 "example": "Beli nasi padang 15000 cash"
             }
         )
+
 
 
 @app.get("/whatsapp/webhook")

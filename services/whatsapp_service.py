@@ -1,8 +1,7 @@
 from fastapi import HTTPException
 import requests
 from schemas.models import Transaction
-import config
-import httpx
+from config import settings
 
 class WhatsAppService:
     @staticmethod
@@ -18,26 +17,18 @@ class WhatsAppService:
         )
     
     @staticmethod
-    async def send_whatsapp_message(to, message):
-        url = f"https://graph.facebook.com/v17.0/{config.settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
-        headers = {
-            "Authorization": f"Bearer {config.settings.WHATSAPP_ACCESS_TOKEN}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "messaging_product": "whatsapp",
-            "to": to,
-            "type": "text",
-            "text": {"body": message}
-        }
+    def async_send_message(phone_number_id: str, message: str):
+        response = requests.post(
+            f"https://graph.facebook.com/v19.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages",
+            headers={"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"},
+            json={
+                "messaging_product": "whatsapp",
+                "to": phone_number_id,  # Nomor yang sudah di-allowlist
+                "type": "text",
+                "text": {"body": message}
+            }
+        )
         
-        print('sampe sini cok hahaha')
-        
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=data, headers=headers)
-        
-        print(response.text)
-
     @staticmethod
     def validate_whatsapp_request(body: dict):
         if not body.get("Body"):
