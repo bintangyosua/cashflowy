@@ -1,9 +1,11 @@
 from typing import Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 class Transaction(BaseModel):
-    description: str
+    timestamp: str
+    prompt_text: str
+    summary_text: str
     amount: float
-    category: str = "Lainnya"
-    type: str  # expense/income/transfer
-    payment_method: str = "cash"
+    type: str  # expense/income
+    category: str
