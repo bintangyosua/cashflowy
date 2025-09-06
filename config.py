@@ -1,10 +1,11 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
-    google_sheet_name: str = "Keuangan Whatsapp"
+    google_sheet_name: str = "Keuangan Telegram"
     
-    WHATSAPP_PHONE_NUMBER_ID: int
-    WHATSAPP_ACCESS_TOKEN: str
+    TELEGRAM_BOT_TOKEN: str
+    TELEGRAM_CHAT_ID: str
     
     GEMINI_API_KEY: str
     GEMINI_API_URL: str
