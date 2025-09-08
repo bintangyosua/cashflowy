@@ -33,13 +33,10 @@ def save_to_google_sheets(financial_data: Dict[str, Any]) -> bool:
     """Menyimpan data keuangan ke Google Sheets"""
     try:
         client = get_google_sheets_client()
-        print("Masuk sini")
         
         # Buka spreadsheet berdasarkan nama
         spreadsheet = client.open(settings.google_sheet_name)
         worksheet = spreadsheet.sheet1  # Menggunakan sheet pertama
-        
-        print("Masuk sini 2")
         
         # Siapkan data untuk disimpan sesuai urutan kolom JSON
         row_data = [
@@ -52,8 +49,6 @@ def save_to_google_sheets(financial_data: Dict[str, Any]) -> bool:
             financial_data.get('summary', ''),
             json.dumps(financial_data.get('items', []), ensure_ascii=False)  # Items sebagai JSON string
         ]
-         
-        print("Masuk sini 3")
         
         # Cek apakah ada header, jika tidak ada maka buat header
         if not worksheet.row_values(1):
@@ -71,8 +66,6 @@ def save_to_google_sheets(financial_data: Dict[str, Any]) -> bool:
         
         # Tambahkan data baru
         worksheet.append_row(row_data)
-        
-        print("Masuk sini 4")
         
         print(f"Data berhasil disimpan ke Google Sheets: {settings.google_sheet_name}")
         return True

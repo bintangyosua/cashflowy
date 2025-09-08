@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, Request, HTTPException
 import requests
 import json
@@ -11,75 +12,11 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from PIL import Image
 import google.generativeai as genai
-import gspread
-from google.oauth2.service_account import Credentials
 
 app = FastAPI()
 
 # Konfigurasi Gemini AI
 genai.configure(api_key=settings.GEMINI_API_KEY)
-
-# Konfigurasi Google Sheets
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SERVICE_ACCOUNT_FILE = 'credentials.json'
-
-def get_google_sheets_client():
-    """Membuat koneksi ke Google Sheets"""
-    credentials = Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-    return gspread.authorize(credentials)
-
-def save_to_google_sheets(financial_data: Dict[str, Any]) -> bool:
-    """Menyimpan data keuangan ke Google Sheets"""
-    try:
-        client = get_google_sheets_client()
-        print("Masuk sini")
-        
-        # Buka spreadsheet berdasarkan nama
-        spreadsheet = client.open(settings.google_sheet_name)
-        worksheet = spreadsheet.sheet1  # Menggunakan sheet pertama
-        
-        print("Masuk sini 2")
-        
-        # Siapkan data untuk disimpan sesuai urutan kolom JSON
-        row_data = [
-            financial_data.get('timestamp', ''),
-            financial_data.get('prompt_text', ''),
-            financial_data.get('category', ''),
-            financial_data.get('amount', 0),
-            financial_data.get('payment_method', ''),
-            financial_data.get('type', ''),
-            financial_data.get('summary', ''),
-            json.dumps(financial_data.get('items', []), ensure_ascii=False)  # Items sebagai JSON string
-        ]
-         
-        print("Masuk sini 3")
-        
-        # Cek apakah ada header, jika tidak ada maka buat header
-        if not worksheet.row_values(1):
-            headers = [
-                'timestamp',
-                'prompt_text', 
-                'category',
-                'amount',
-                'payment_method',
-                'type',
-                'summary',
-                'items'
-            ]
-            worksheet.append_row(headers)
-        
-        # Tambahkan data baru
-        worksheet.append_row(row_data)
-        
-        print("Masuk sini 4")
-        
-        print(f"Data berhasil disimpan ke Google Sheets: {settings.google_sheet_name}")
-        return True
-        
-    except Exception as e:
-        print(f"Error menyimpan ke Google Sheets: {e}")
-        return False
 
 # Model untuk response data keuangan
 class FinancialItem(BaseModel):
@@ -332,12 +269,8 @@ async def telegram_webhook(request: Request):
                 if "error" in financial_data:
                     reply_text = f"❌ *Error*\n\n{financial_data['error']}"
                 else:
-                    # Simpan ke Google Sheets
-                    sheet_saved = save_to_google_sheets(financial_data)
-                    sheet_status = "✅ Disimpan ke Google Sheets" if sheet_saved else "⚠️ Gagal menyimpan ke Google Sheets"
-                    
                     # Format response yang lebih readable
-                    reply_text = f"📊 *Analisis Keuangan*\n\n"
+                    reply_text = f"� *Analisis Keuangan*\n\n"
                     reply_text += f"👤 *User:* {user_name}\n"
                     reply_text += f"⏰ *Waktu:* {financial_data.get('timestamp', 'N/A')}\n"
                     reply_text += f"📝 *Teks:* {financial_data.get('prompt_text', 'N/A')}\n"
@@ -346,7 +279,6 @@ async def telegram_webhook(request: Request):
                     reply_text += f"💳 *Metode:* {financial_data.get('payment_method', 'N/A')}\n"
                     reply_text += f"📊 *Tipe:* {financial_data.get('type', 'N/A')}\n"
                     reply_text += f"📋 *Ringkasan:* {financial_data.get('summary', 'N/A')}\n"
-                    reply_text += f"💾 *Status:* {sheet_status}\n"
                     
                     if financial_data.get('items'):
                         reply_text += f"\n🛒 *Item yang dibeli:*\n"
@@ -354,11 +286,6 @@ async def telegram_webhook(request: Request):
                             reply_text += f"• {item.get('name', 'N/A')} x{item.get('quantity', 1)} - Rp {item.get('price', 0):,.0f}\n"
                 
                 send_telegram_message(chat_id, reply_text)
-                
-                # Kirim juga JSON raw dari Gemini AI jika berhasil
-                if "error" not in financial_data:
-                    json_text = f"🔧 *JSON Response dari Gemini AI:*\n\n```json\n{json.dumps(financial_data, indent=2, ensure_ascii=False)}\n```"
-                    send_telegram_message(chat_id, json_text)
             
             # Menangani pesan gambar
             elif "photo" in message:
@@ -387,10 +314,6 @@ async def telegram_webhook(request: Request):
                         if "error" in financial_data:
                             reply_text = f"❌ *Error*\n\n{financial_data['error']}"
                         else:
-                            # Simpan ke Google Sheets
-                            sheet_saved = save_to_google_sheets(financial_data)
-                            sheet_status = "✅ Disimpan ke Google Sheets" if sheet_saved else "⚠️ Gagal menyimpan ke Google Sheets"
-                            
                             # Format response
                             reply_text = f"🖼️💰 *Analisis Gambar Keuangan*\n\n"
                             reply_text += f"👤 *User:* {user_name}\n"
@@ -403,20 +326,14 @@ async def telegram_webhook(request: Request):
                             reply_text += f"💵 *Jumlah:* Rp {financial_data.get('amount', 0):,.0f}\n"
                             reply_text += f"💳 *Metode:* {financial_data.get('payment_method', 'N/A')}\n"
                             reply_text += f"📊 *Tipe:* {financial_data.get('type', 'N/A')}\n"
-                            reply_text += f"📋 *Ringkasan:* {financial_data.get('summary', 'N/A')}\n"
-                            reply_text += f"💾 *Status:* {sheet_status}\n"
+                            reply_text += f"� *Ringkasan:* {financial_data.get('summary', 'N/A')}\n"
                             
                             if financial_data.get('items'):
-                                reply_text += f"\n🛒 *Item yang dibeli:*\n"
+                                reply_text += f"\n� *Item yang dibeli:*\n"
                                 for item in financial_data['items']:
                                     reply_text += f"• {item.get('name', 'N/A')} x{item.get('quantity', 1)} - Rp {item.get('price', 0):,.0f}\n"
                         
                         send_telegram_message(chat_id, reply_text)
-                        
-                        # Kirim juga JSON raw dari Gemini AI jika berhasil
-                        if "error" not in financial_data:
-                            json_text = f"🔧 *JSON Response dari Gemini AI:*\n\n```json\n{json.dumps(financial_data, indent=2, ensure_ascii=False)}\n```"
-                            send_telegram_message(chat_id, json_text)
                     else:
                         send_telegram_message(chat_id, f"❌ Gagal mengunduh gambar dari {user_name}")
                 else:
@@ -505,8 +422,7 @@ def health_check():
         "timestamp": get_current_timestamp(),
         "services": {
             "telegram_bot": "configured" if settings.TELEGRAM_BOT_TOKEN else "not_configured",
-            "gemini_ai": "configured" if settings.GEMINI_API_KEY else "not_configured",
-            "google_sheets": "configured" if os.path.exists(SERVICE_ACCOUNT_FILE) else "not_configured"
+            "gemini_ai": "configured" if settings.GEMINI_API_KEY else "not_configured"
         }
     }
 
