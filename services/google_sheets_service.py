@@ -28,7 +28,6 @@ class GoogleSheetsService:
         """Buat spreadsheet baru jika belum ada"""
         try:
             spreadsheet = client.open(settings.google_sheet_name)
-            print(f"✅ Spreadsheet '{settings.google_sheet_name}' ditemukan")
             return spreadsheet
         except SpreadsheetNotFound:
             print(f"❌ Spreadsheet '{settings.google_sheet_name}' tidak ditemukan")

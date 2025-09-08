@@ -10,7 +10,12 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str
     GEMINI_API_URL: str
     
+    OPENAI_API_KEY: str
+    
     VERIFY_TOKEN: str
+    
+    # AI Provider setting - default menggunakan chatgpt
+    ai_provider: str = "chatgpt"  # "chatgpt" atau "gemini"
     
     class Config:
         env_file = ".env"

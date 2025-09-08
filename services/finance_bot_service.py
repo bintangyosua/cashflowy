@@ -2,18 +2,28 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 import pytz
 from .gemini_service import GeminiService
+from .chatgpt_service import ChatGPTService
 from .google_sheets_service import GoogleSheetsService
 from .telegram_service import TelegramService
 from .message_formatter_service import MessageFormatterService
+from config import settings
 
 class FinanceBotService:
     """Service utama yang menggabungkan semua service"""
     
     def __init__(self):
         self.gemini = GeminiService()
+        self.chatgpt = ChatGPTService()
         self.sheets = GoogleSheetsService()
         self.telegram = TelegramService()
         self.formatter = MessageFormatterService()
+    
+    def get_ai_service(self):
+        """Mendapatkan AI service yang aktif berdasarkan konfigurasi"""
+        if settings.ai_provider.lower() == "gemini":
+            return self.gemini
+        else:
+            return self.chatgpt
     
     def get_timestamp_from_unix(self, unix_timestamp: int) -> str:
         """Konversi Unix timestamp ke format string dengan timezone Jakarta"""
@@ -26,8 +36,9 @@ class FinanceBotService:
         # Kirim pesan sedang memproses
         self.telegram.send_message(chat_id, self.formatter.format_processing_message())
         
-        # Proses dengan Gemini AI
-        financial_data = await self.gemini.process_financial_data(text_content=text_content)
+        # Proses dengan AI service yang aktif
+        ai_service = self.get_ai_service()
+        financial_data = await ai_service.process_financial_data(text_content=text_content)
         
         if "error" in financial_data:
             # Kirim pesan error
@@ -70,8 +81,9 @@ class FinanceBotService:
             self.telegram.send_message(chat_id, error_msg)
             return
         
-        # Proses dengan Gemini AI
-        financial_data = await self.gemini.process_financial_data(
+        # Proses dengan AI service yang aktif
+        ai_service = self.get_ai_service()
+        financial_data = await ai_service.process_financial_data(
             text_content=caption if caption else None,
             image_data=image_data
         )

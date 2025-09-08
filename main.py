@@ -5,6 +5,7 @@ from config import settings
 from services.finance_bot_service import FinanceBotService
 from services.telegram_service import TelegramService
 from services.gemini_service import GeminiService
+from services.chatgpt_service import ChatGPTService
 from services.google_sheets_service import GoogleSheetsService
 import os
 from datetime import datetime
@@ -16,6 +17,7 @@ app = FastAPI()
 finance_bot = FinanceBotService()
 telegram_service = TelegramService()
 gemini_service = GeminiService()
+chatgpt_service = ChatGPTService()
 google_sheets_service = GoogleSheetsService()
 
 # Models untuk Telegram webhook
@@ -61,6 +63,10 @@ class FinancialData(BaseModel):
     type: str  # income/expense/transfer
     summary: str
     items: List[FinancialItem] = []
+
+# Model untuk AI Provider request
+class AIProviderRequest(BaseModel):
+    provider: str  # "chatgpt" atau "gemini"
 
 @app.get("/")
 def read_root():
@@ -161,12 +167,67 @@ def health_check():
     return {
         "status": "healthy",
         "timestamp": timestamp,
+        "ai_provider": settings.ai_provider,
         "services": {
             "telegram_bot": "configured" if settings.TELEGRAM_BOT_TOKEN else "not_configured",
             "gemini_ai": "configured" if settings.GEMINI_API_KEY else "not_configured",
+            "chatgpt_ai": "configured" if settings.OPENAI_API_KEY else "not_configured",
             "google_sheets": "configured" if os.path.exists('credentials.json') else "not_configured"
         }
     }
+
+@app.get("/ai-provider")
+def get_ai_provider():
+    """Mendapatkan AI provider yang sedang aktif"""
+    return {
+        "current_provider": settings.ai_provider,
+        "available_providers": ["chatgpt", "gemini"]
+    }
+
+@app.post("/ai-provider")
+def set_ai_provider(request: AIProviderRequest):
+    """Mengatur AI provider yang akan digunakan"""
+    provider = request.provider.lower()
+    
+    if provider not in ["chatgpt", "gemini"]:
+        raise HTTPException(
+            status_code=400, 
+            detail="Provider harus 'chatgpt' atau 'gemini'"
+        )
+    
+    # Cek apakah API key tersedia
+    if provider == "chatgpt" and not settings.OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="OPENAI_API_KEY belum dikonfigurasi"
+        )
+    
+    if provider == "gemini" and not settings.GEMINI_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="GEMINI_API_KEY belum dikonfigurasi"
+        )
+    
+    # Update settings
+    settings.ai_provider = provider
+    
+    return {
+        "status": "success",
+        "message": f"AI provider berhasil diubah ke {provider}",
+        "current_provider": settings.ai_provider
+    }
+
+@app.post("/test-chatgpt")
+async def test_chatgpt(text: str = None):
+    """Endpoint untuk testing ChatGPT dengan teks (untuk development)"""
+    try:
+        if not text:
+            return {"error": "Text parameter is required"}
+            
+        result = await chatgpt_service.process_financial_data(text_content=text)
+        return {"status": "processed", "result": result}
+    except Exception as e:
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

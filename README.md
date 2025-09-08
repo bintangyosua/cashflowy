@@ -5,19 +5,19 @@ An AI-powered Telegram bot that records transactions from text messages and rece
 ## 🚀 Features
 
 - Receives and processes transactions from Telegram messages and images
+- **Multi-AI Support**: Choose between ChatGPT or Gemini AI for transaction processing
 - AI-powered receipt OCR with item detail extraction
-- Google Sheets integration for transaction storage
-- Google Drive integration for receipt image storage
+- Google Sheets integration for transaction storage (latest entries appear at top)
 - Support for multiple items per transaction (e.g., grocery receipts)
-- Interactive buttons for navigation and reports
+- RESTful API endpoints for AI provider configuration
 
 ## 📦 Technologies
 
 - **Python** (FastAPI)
 - **Telegram Bot API**
 - **Google Sheets API**
-- **Google Drive API**
-- **Gemini AI** (for transaction parsing and OCR)
+- **ChatGPT/OpenAI API** (Primary AI provider)
+- **Gemini AI** (Alternative AI provider)
 
 ## 🔧 Installation
 
@@ -33,21 +33,32 @@ An AI-powered Telegram bot that records transactions from text messages and rece
 3. Configure environment variables:
    ```sh
    cp .env.example .env
-   # Edit .env with your Telegram Bot Token, Google credentials, etc.
+   # Edit .env with your configuration:
+   # - TELEGRAM_BOT_TOKEN: Your Telegram bot token
+   # - OPENAI_API_KEY: Your OpenAI API key (for ChatGPT)
+   # - GEMINI_API_KEY: Your Google Gemini API key (optional)
+   # - AI_PROVIDER: Set to "chatgpt" or "gemini"
    ```
 
-## 🛠️ Google Drive Setup
+## 🤖 AI Provider Configuration
 
-To enable image upload functionality:
+This bot supports two AI providers:
 
-1. Go to [Google Drive](https://drive.google.com)
-2. Create a new folder for storing receipt images
-3. Right-click the folder → Share → Get link
-4. Copy the folder ID from the URL (e.g., `1abcd1234efgh5678ijkl`)
-5. Update `services/sheets_service.py` line 28:
-   ```python
-   'parents': ['your_folder_id_here']  # Replace with your folder ID
-   ```
+### ChatGPT (Default, Recommended)
+
+- Better accuracy for financial data extraction
+- Excellent image processing capabilities
+- More reliable JSON response formatting
+
+### Gemini AI (Alternative)
+
+- Free tier available
+- Good for basic text processing
+- Backup option when OpenAI is unavailable
+
+You can switch between providers using the API endpoints or by updating the `AI_PROVIDER` environment variable.
+
+````
 
 ## 🚀 Running the Bot
 
@@ -55,27 +66,24 @@ Start the server with FastAPI:
 
 ```sh
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
+````
 
 ## 📌 Usage
 
 The bot will automatically respond to Telegram messages:
 
-- **"start"** → Displays "Recent Transactions" and "Weekly Menu" buttons
-- **"recent"** → Shows the latest transactions
-- **"weekly"** → Displays weekly report options
-- **Send text** → AI extracts transaction details
-- **Send image** → OCR processes receipt with item details + uploads image
+- **Send text** → AI extracts transaction details and saves to Google Sheets
+- **Send image** → OCR processes receipt with item details
+- **Latest transactions appear at the top** of your Google Sheets
 
-## 📊 Receipt Processing
+### Transaction Processing
 
-When you send a receipt image, the bot will:
+When you send transaction data (text or image), the bot will:
 
-1. Extract all items with quantities and prices
-2. Calculate the total amount from Grand Total
-3. Store item details in the sheet
-4. Upload the receipt image to Google Drive
-5. Save the image URL in the transaction record
+1. Process with selected AI provider (ChatGPT or Gemini)
+2. Extract transaction details (amount, category, payment method, etc.)
+3. Save to Google Sheets with newest entries at the top
+4. Send confirmation message with extracted details
 
 Example response for a grocery receipt:
 
@@ -88,18 +96,34 @@ Detail items:
 • Indomie Goreng x5 @Rp3,000
 • Teh Botol x2 @Rp4,500
 • Snack x3 @Rp2,500
-
-📷 Gambar tersimpan
 ```
-
-- **Transaction text** → AI processes and records the transaction in Google Sheets.
 
 ## 🛠 API Endpoints
 
-| Method | Endpoint   | Description                     |
-| ------ | ---------- | ------------------------------- |
-| `GET`  | `/`        | Home Page                       |
-| `POST` | `/webhook` | Receives webhooks from WhatsApp |
+| Method | Endpoint              | Description                           |
+| ------ | --------------------- | ------------------------------------- |
+| `GET`  | `/`                   | Home Page                             |
+| `POST` | `/webhook`            | Receives webhooks from Telegram       |
+| `GET`  | `/health`             | Health check & service status         |
+| `GET`  | `/ai-provider`        | Get current AI provider               |
+| `POST` | `/ai-provider`        | Set AI provider (chatgpt/gemini)      |
+| `POST` | `/test-chatgpt`       | Test ChatGPT processing (development) |
+| `POST` | `/test-gemini`        | Test Gemini processing (development)  |
+| `POST` | `/test-google-sheets` | Test Google Sheets connection         |
+
+### Example: Switch to ChatGPT
+
+```bash
+curl -X POST "http://localhost:8000/ai-provider" \
+     -H "Content-Type: application/json" \
+     -d '{"provider": "chatgpt"}'
+```
+
+### Example: Check current AI provider
+
+```bash
+curl -X GET "http://localhost:8000/ai-provider"
+```
 
 ## 👨‍💻 Contributing
 
