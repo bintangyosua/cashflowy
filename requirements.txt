@@ -11,4 +11,3 @@ google-generativeai
 google-api-python-client
 Pillow
 python-dotenv
-base64
