@@ -47,8 +47,8 @@ class FinanceBotService:
             self.telegram.send_message(chat_id, analysis_msg)
             
             # Kirim JSON response
-            json_msg = self.formatter.format_json_response(financial_data)
-            self.telegram.send_message(chat_id, json_msg)
+            # json_msg = self.formatter.format_json_response(financial_data)
+            # self.telegram.send_message(chat_id, json_msg)
     
     async def process_image_message(self, chat_id: int, user_name: str, file_id: str, message_timestamp: int, caption: str = ""):
         """Memproses pesan gambar"""
@@ -94,8 +94,8 @@ class FinanceBotService:
             self.telegram.send_message(chat_id, analysis_msg)
             
             # Kirim JSON response
-            json_msg = self.formatter.format_json_response(financial_data)
-            self.telegram.send_message(chat_id, json_msg)
+            # json_msg = self.formatter.format_json_response(financial_data)
+            # self.telegram.send_message(chat_id, json_msg)
     
     def process_unsupported_message(self, chat_id: int, user_name: str):
         """Memproses pesan yang tidak didukung"""
