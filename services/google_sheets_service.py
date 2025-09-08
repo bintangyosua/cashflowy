@@ -44,7 +44,6 @@ class GoogleSheetsService:
             except Exception as share_error:
                 print(f"⚠️ Warning: Tidak bisa share spreadsheet: {share_error}")
             
-            print(f"✅ Spreadsheet '{settings.google_sheet_name}' berhasil dibuat")
             return spreadsheet
     
     def test_connection(self) -> Dict[str, Any]:
@@ -102,9 +101,7 @@ class GoogleSheetsService:
                 existing_headers = worksheet.row_values(1)
                 if not existing_headers:
                     raise Exception("No headers found")
-                print(f"✅ Headers ditemukan: {existing_headers}")
             except:
-                print("🔄 Menambahkan headers...")
                 headers = [
                     'timestamp',
                     'prompt_text', 
@@ -116,12 +113,10 @@ class GoogleSheetsService:
                     'items'
                 ]
                 worksheet.append_row(headers)
-                print(f"✅ Headers berhasil ditambahkan: {headers}")
             
-            # Tambahkan data baru
-            worksheet.append_row(row_data)
+            # Tambahkan data baru di paling atas setelah header (baris ke-2)
+            worksheet.insert_row(row_data, 2)
             
-            print(f"✅ Data berhasil disimpan ke Google Sheets: {settings.google_sheet_name}")
             return True
             
         except Exception as e:
