@@ -30,7 +30,6 @@ Saya akan memberikan Anda teks atau gambar yang berkaitan dengan transaksi keuan
 Tolong analisis dan ekstrak informasi berikut dalam format JSON yang VALID:
 
 {
-  "timestamp": "YYYY-MM-DD HH:MM:SS (jika ada waktu di gambar, gunakan itu. Jika tidak, gunakan waktu saat ini)",
   "prompt_text": "teks yang diberikan atau deskripsi gambar",
   "category": "kategori transaksi (entertainment, transfer, billings, food, shopping, transport, dll)",
   "amount": "total jumlah uang (angka saja, tanpa mata uang)",
@@ -50,10 +49,9 @@ Aturan penting:
 1. Berikan HANYA JSON yang valid, tanpa penjelasan tambahan
 2. Untuk amount, gunakan angka saja (contoh: 50000, bukan "Rp 50.000")
 3. Jika tidak ada informasi spesifik, gunakan nilai default yang masuk akal
-4. Untuk timestamp, jika ada tanggal/waktu di gambar, gunakan itu. Jika tidak, biarkan kosong
-5. Items hanya diisi jika ada daftar pembelian yang jelas (seperti struk belanja)
-6. Category harus spesifik (contoh: food, transport, entertainment, shopping, transfer, billings)
-7. Type: "expense" untuk pengeluaran, "income" untuk pemasukan, "transfer" untuk transfer antar akun
+4. Items hanya diisi jika ada daftar pembelian yang jelas (seperti struk belanja)
+5. Category harus spesifik (contoh: food, transport, entertainment, shopping, transfer, billings)
+6. Type: "expense" untuk pengeluaran, "income" untuk pemasukan, "transfer" untuk transfer antar akun
 
 Analisis data berikut:
 """
@@ -110,10 +108,9 @@ Analisis data berikut:
             # Parse JSON
             financial_data = json.loads(response_text)
             
-            # Jika timestamp kosong, gunakan waktu saat ini
-            if not financial_data.get("timestamp"):
-                financial_data["timestamp"] = self.get_current_timestamp()
-
+            # Timestamp akan ditambahkan di level service yang lebih tinggi
+            # berdasarkan waktu pesan dari user
+            
             return financial_data
             
         except json.JSONDecodeError as e:

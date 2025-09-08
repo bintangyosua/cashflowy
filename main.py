@@ -78,11 +78,12 @@ async def telegram_webhook(request: Request):
             message = data["message"]
             chat_id = message["chat"]["id"]
             user_name = message["from"].get("first_name", "User")
+            message_timestamp = message.get("date", 0)  # Unix timestamp dari Telegram
             
             # Menangani pesan teks
             if "text" in message:
                 user_text = message["text"]
-                await finance_bot.process_text_message(chat_id, user_name, user_text)
+                await finance_bot.process_text_message(chat_id, user_name, user_text, message_timestamp)
             
             # Menangani pesan gambar
             elif "photo" in message:
@@ -91,7 +92,7 @@ async def telegram_webhook(request: Request):
                 file_id = largest_photo["file_id"]
                 caption = message.get("caption", "")
                 
-                await finance_bot.process_image_message(chat_id, user_name, file_id, caption)
+                await finance_bot.process_image_message(chat_id, user_name, file_id, message_timestamp, caption)
             
             # Menangani jenis pesan lainnya
             else:

@@ -1,4 +1,6 @@
 from typing import Dict, Any, Optional
+from datetime import datetime
+import pytz
 from .gemini_service import GeminiService
 from .google_sheets_service import GoogleSheetsService
 from .telegram_service import TelegramService
@@ -13,7 +15,13 @@ class FinanceBotService:
         self.telegram = TelegramService()
         self.formatter = MessageFormatterService()
     
-    async def process_text_message(self, chat_id: int, user_name: str, text_content: str):
+    def get_timestamp_from_unix(self, unix_timestamp: int) -> str:
+        """Konversi Unix timestamp ke format string dengan timezone Jakarta"""
+        jakarta_tz = pytz.timezone('Asia/Jakarta')
+        dt = datetime.fromtimestamp(unix_timestamp, tz=jakarta_tz)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    
+    async def process_text_message(self, chat_id: int, user_name: str, text_content: str, message_timestamp: int):
         """Memproses pesan teks"""
         # Kirim pesan sedang memproses
         self.telegram.send_message(chat_id, self.formatter.format_processing_message())
@@ -26,6 +34,9 @@ class FinanceBotService:
             error_msg = self.formatter.format_error_message(financial_data['error'])
             self.telegram.send_message(chat_id, error_msg)
         else:
+            # Tambahkan timestamp berdasarkan waktu pesan user
+            financial_data["timestamp"] = self.get_timestamp_from_unix(message_timestamp)
+            
             # Simpan ke Google Sheets
             sheet_saved = self.sheets.save_financial_data(financial_data)
             
@@ -36,10 +47,10 @@ class FinanceBotService:
             self.telegram.send_message(chat_id, analysis_msg)
             
             # Kirim JSON response
-            # json_msg = self.formatter.format_json_response(financial_data)
-            # self.telegram.send_message(chat_id, json_msg)
+            json_msg = self.formatter.format_json_response(financial_data)
+            self.telegram.send_message(chat_id, json_msg)
     
-    async def process_image_message(self, chat_id: int, user_name: str, file_id: str, caption: str = ""):
+    async def process_image_message(self, chat_id: int, user_name: str, file_id: str, message_timestamp: int, caption: str = ""):
         """Memproses pesan gambar"""
         # Kirim pesan sedang memproses
         self.telegram.send_message(chat_id, self.formatter.format_processing_message(is_image=True))
@@ -70,6 +81,9 @@ class FinanceBotService:
             error_msg = self.formatter.format_error_message(financial_data['error'])
             self.telegram.send_message(chat_id, error_msg)
         else:
+            # Tambahkan timestamp berdasarkan waktu pesan user
+            financial_data["timestamp"] = self.get_timestamp_from_unix(message_timestamp)
+            
             # Simpan ke Google Sheets
             sheet_saved = self.sheets.save_financial_data(financial_data)
             
@@ -80,8 +94,8 @@ class FinanceBotService:
             self.telegram.send_message(chat_id, analysis_msg)
             
             # Kirim JSON response
-            # json_msg = self.formatter.format_json_response(financial_data)
-            # self.telegram.send_message(chat_id, json_msg)
+            json_msg = self.formatter.format_json_response(financial_data)
+            self.telegram.send_message(chat_id, json_msg)
     
     def process_unsupported_message(self, chat_id: int, user_name: str):
         """Memproses pesan yang tidak didukung"""
