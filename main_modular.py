@@ -5,7 +5,6 @@ from config import settings
 from services.finance_bot_service import FinanceBotService
 from services.telegram_service import TelegramService
 from services.gemini_service import GeminiService
-from services.google_sheets_service import GoogleSheetsService
 import os
 from datetime import datetime
 import pytz
@@ -16,7 +15,6 @@ app = FastAPI()
 finance_bot = FinanceBotService()
 telegram_service = TelegramService()
 gemini_service = GeminiService()
-google_sheets_service = GoogleSheetsService()
 
 # Models untuk Telegram webhook
 class TelegramPhotoSize(BaseModel):
@@ -140,15 +138,6 @@ async def test_gemini(text: str = None):
         return {"status": "processed", "result": result}
     except Exception as e:
         return {"error": str(e)}
-
-@app.post("/test-google-sheets")
-def test_google_sheets():
-    """Endpoint untuk testing koneksi Google Sheets"""
-    try:
-        result = google_sheets_service.test_connection()
-        return result
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
 @app.get("/health")
 def health_check():
