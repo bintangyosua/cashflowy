@@ -8,3 +8,5 @@ uvicorn==0.34.0
 requests
 dotenv
 google-generativeai
+google-api-python-client
+Pillow
